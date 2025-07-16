@@ -3,29 +3,30 @@ import numpy as np
 import os
 import cairosvg
 import matplotlib.pyplot as plt
+import sys
 
 
 def convert_svg(track_name:str)->bool:
     cairosvg.svg2png(url=f"tracks/svg/{track_name}.svg",write_to=f"tracks/png/{track_name}.png")
     return True
 
-def create_track(track_name:str="miami",verbose:bool=True):
+def convert_track(track_name,verbose:bool="True"):
     if not os.path.exists(f"tracks/png/{track_name}.png"):
         if verbose:
-            print("PNG not avaiable checking for svg..")
-        if not os.path.exists(f"tracks/svg/{track_name}.png"):
+            print(f"{track_name.upper()} PNG not avaiable checking for svg..")
+        if not os.path.exists(f"tracks/svg/{track_name}.svg"):
             if verbose:
-                print("SVG also not available please provide the svg or double check the name")
+                print(f"{track_name.upper()} SVG also not available please provide the svg or double check the name")
             return False
         else:
             if verbose:
-                print("SVG file found")
+                print(f"{track_name.upper()} SVG file found")
             converted_=convert_svg(track_name)
             if converted_:
-                print("PNG file created.")
+                print(f"{track_name.upper()} PNG file created.")
     else:
         if verbose:
-            print("File Already Exists.")
+            print(f"{track_name.upper()} File Already Exists.")
     img_path = f"tracks/png/{track_name}.png"
     img = cv2.imread(img_path,cv2.IMREAD_UNCHANGED)
     b,g,r,a = cv2.split(img)
@@ -44,10 +45,25 @@ def create_track(track_name:str="miami",verbose:bool=True):
     
     return track_path
 
+def create_track(track_name:str="all",verbose:bool=True):
+    if not track_name.lower()  == "all":
+        convert_track(track_name=track_name,verbose=verbose)
+    else:
+        for filename in os.listdir("tracks/svg"):
+            full_path = os.path.join("tracks",filename)
+            
+            create_track(track_name=filename.split(".")[0])
+
+
 
 if __name__ == "__main__":
+    try:
+        name = sys.argv[1]
+        print(name)
+    except:
+        name="all"  
 
-    track = create_track("miami")
+    track = create_track(name)
     if track:
         
         x_vals = [pt[0] for pt in track]
