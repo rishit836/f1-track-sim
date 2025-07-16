@@ -42,17 +42,32 @@ def convert_track(track_name,verbose:bool="True"):
     # stacking two arrays into 2d array (x,y)
     black_coords = np.column_stack(np.where(mask))
     track_path = [(int(x), int(y)) for y, x in black_coords]
+    if verbose:
+        x_vals = [pt[0] for pt in track_path]
+        y_vals = [pt[1] for pt in track_path]
+
+        plt.figure(figsize=(8, 6))
+        plt.scatter(x_vals, y_vals, s=1, c='blue')
+        plt.gca().invert_yaxis()  # Match image coordinate system
+        plt.title(f"{track_name.upper()} (Black Pixels on Transparent PNG)")
+        plt.axis("equal")
+        plt.grid(True)
+        plt.show()
     
     return track_path
 
 def create_track(track_name:str="all",verbose:bool=True):
     if not track_name.lower()  == "all":
-        convert_track(track_name=track_name,verbose=verbose)
+        t = convert_track(track_name=track_name,verbose=verbose)
+        return t
     else:
+        track_paths={}
         for filename in os.listdir("tracks/svg"):
             full_path = os.path.join("tracks",filename)
-            
-            create_track(track_name=filename.split(".")[0])
+            t = convert_track(track_name=filename.split(".")[0])
+            track_paths.update({filename.split(".")[0]:t})
+
+        return track_paths
 
 
 
@@ -64,17 +79,5 @@ if __name__ == "__main__":
         name="all"  
 
     track = create_track(name)
-    if track:
-        
-        x_vals = [pt[0] for pt in track]
-        y_vals = [pt[1] for pt in track]
-
-        plt.figure(figsize=(8, 6))
-        plt.scatter(x_vals, y_vals, s=1, c='blue')
-        plt.gca().invert_yaxis()  # Match image coordinate system
-        plt.title("Track Path (Black Pixels on Transparent PNG)")
-        plt.axis("equal")
-        plt.grid(True)
-        plt.show()
 
 
