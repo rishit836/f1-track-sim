@@ -42,22 +42,27 @@ def convert_track(track_name,verbose:bool="True"):
     mask = black_pixels & visible
     # converting the picture into a path
 
-    mask = skeletonize(mask)
+    mk = skeletonize(mask)
 
     # stacking two arrays into 2d array (x,y)
     black_coords = np.column_stack(np.where(mask))
+    black_coords_1 = np.column_stack(np.where(mk))
+
     track_path = [(int(x), int(y)) for y, x in black_coords]
+    track_path1 = [(int(x), int(y)) for y, x in black_coords_1]
     if verbose:
         print(verbose)
         x_vals = [pt[0] for pt in track_path]
         y_vals = [pt[1] for pt in track_path]
+        x_vals1 = [pt[0] for pt in track_path1]
+        y_vals1 = [pt[1] for pt in track_path1]
 
         plt.figure(figsize=(8, 6))
         plt.scatter(x_vals, y_vals, s=1, c='black')
+        plt.scatter(x_vals1, y_vals1, s=1, c='blue')
+
         # Plot the first track point in red (larger marker)
-        plt.scatter(x_vals[0], y_vals[0], s=30, c="red", label="Start Point")
-        # Plot (0,0) in red (larger marker)
-        plt.scatter(0, 0, s=30, c="red", label="Origin (0,0)")
+        plt.scatter(x_vals1[0], y_vals1[0], s=30, c="red", label="Start Point")
         plt.gca().invert_yaxis()  # Match image coordinate system
         plt.title(f"{track_name.upper()} (Black Pixels on Transparent PNG)")
         plt.axis("equal")
@@ -65,7 +70,7 @@ def convert_track(track_name,verbose:bool="True"):
         plt.legend()
         plt.show()
     
-    return track_path
+    return track_path1
 
 def create_track(track_name:str="all",verbose:bool=True):
     if not track_name.lower()  == "all":
