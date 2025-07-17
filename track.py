@@ -4,6 +4,8 @@ import os
 import cairosvg
 import matplotlib.pyplot as plt
 import sys
+# using skeletonize to convert the track into a singular path
+from skimage.morphology import skeletonize
 
 
 def convert_svg(track_name:str)->bool:
@@ -38,20 +40,29 @@ def convert_track(track_name,verbose:bool="True"):
     # checking if the pixel is visible
     visible = (a>0)
     mask = black_pixels & visible
+    # converting the picture into a path
+
+    mask = skeletonize(mask)
 
     # stacking two arrays into 2d array (x,y)
     black_coords = np.column_stack(np.where(mask))
     track_path = [(int(x), int(y)) for y, x in black_coords]
     if verbose:
+        print(verbose)
         x_vals = [pt[0] for pt in track_path]
         y_vals = [pt[1] for pt in track_path]
 
         plt.figure(figsize=(8, 6))
-        plt.scatter(x_vals, y_vals, s=1, c='blue')
+        plt.scatter(x_vals, y_vals, s=1, c='black')
+        # Plot the first track point in red (larger marker)
+        plt.scatter(x_vals[0], y_vals[0], s=30, c="red", label="Start Point")
+        # Plot (0,0) in red (larger marker)
+        plt.scatter(0, 0, s=30, c="red", label="Origin (0,0)")
         plt.gca().invert_yaxis()  # Match image coordinate system
         plt.title(f"{track_name.upper()} (Black Pixels on Transparent PNG)")
         plt.axis("equal")
         plt.grid(True)
+        plt.legend()
         plt.show()
     
     return track_path
@@ -64,7 +75,7 @@ def create_track(track_name:str="all",verbose:bool=True):
         track_paths={}
         for filename in os.listdir("tracks/svg"):
             full_path = os.path.join("tracks",filename)
-            t = convert_track(track_name=filename.split(".")[0])
+            t = convert_track(track_name=filename.split(".")[0],verbose=verbose)
             track_paths.update({filename.split(".")[0]:t})
 
         return track_paths
