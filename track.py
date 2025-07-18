@@ -48,7 +48,7 @@ def convert_track(track_name,verbose:bool="True"):
     # stacking two arrays into 2d array (x,y)
     black_coords = np.column_stack(np.where(mask))
     black_coords_1 = np.column_stack(np.where(mk))
-    black_coords_1=sort_nearest_neighbour(black_coords_1)
+    black_coords_1 = sort_nearest_neighbour(black_coords_1)
 
 
     track_path = [(int(x), int(y)) for y, x in black_coords]
@@ -96,8 +96,36 @@ def sort_nearest_neighbour(path):
         curr_index = nearest_index
         used[curr_index] =True
         sorted_path.append(path[curr_index])
+        
     return sorted_path
 
+def are_collinear(points):
+    if len(points)<3:
+        return True
+    # because we require slopes to set car angle
+    slopes = []
+    for index,point in enumerate(points):
+        for i,point2 in enumerate(points):
+            if i == index:
+                continue
+            y_diff = point2[1] - point[1]
+            x_diff = point2[0] - point[0]
+            if x_diff != 0:
+                slope = y_diff/x_diff
+                slopes.append(slope)
+            else:
+                slopes.append(float('inf'))
+    mean_slope = sum(slopes)/len(slopes)
+    for s in slopes:
+        # having a error window to allow the slope to be almost equal
+        # considering the error between points due to pixel approximation
+        if not abs(s-mean_slope) < 1e-3:
+            # if any point has bigger error difference than 1e-3 then
+            # we return False
+            # else the loop keeps running and return True
+            return False
+    
+    return True
             
 
 # creating sectors such as straight line curve with curve radius etc and not purple green sectors
@@ -105,9 +133,10 @@ def sort_nearest_neighbour(path):
 # model to learn
 def create_sectors(path):
     window_size = 3
-    
     for points in path():
         pass
+
+
 def create_track(track_name:str="all",verbose:bool=True):
     if not track_name.lower()  == "all":
         t = convert_track(track_name=track_name,verbose=verbose)
