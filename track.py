@@ -4,6 +4,7 @@ import os
 import cairosvg
 import matplotlib.pyplot as plt
 import sys
+import math
 # using skeletonize to convert the track into a singular path
 from skimage.morphology import skeletonize
 
@@ -47,6 +48,8 @@ def convert_track(track_name,verbose:bool="True"):
     # stacking two arrays into 2d array (x,y)
     black_coords = np.column_stack(np.where(mask))
     black_coords_1 = np.column_stack(np.where(mk))
+    black_coords_1=sort_nearest_neighbour(black_coords_1)
+
 
     track_path = [(int(x), int(y)) for y, x in black_coords]
     track_path1 = [(int(x), int(y)) for y, x in black_coords_1]
@@ -72,6 +75,39 @@ def convert_track(track_name,verbose:bool="True"):
     
     return track_path1
 
+def sort_nearest_neighbour(path):
+    # creating a path to be used
+    used = [False] * len(path)
+    curr_index = 0
+    used[curr_index] = True
+    sorted_path = []
+    while not all(used):
+        dist = 0
+        nearest_index = -1
+        nearest_distance = float('inf')
+        for index,point in enumerate(path):
+            # skippings points which are already sorted/used
+            if used[index]:
+                continue
+            dist = math.dist(path[curr_index],point)
+            if dist < nearest_distance:
+                nearest_distance = dist
+                nearest_index = index
+        curr_index = nearest_index
+        used[curr_index] =True
+        sorted_path.append(path[curr_index])
+    return sorted_path
+
+            
+
+# creating sectors such as straight line curve with curve radius etc and not purple green sectors
+# these sectors can then be used to generate a optimal racing line which can be used by the
+# model to learn
+def create_sectors(path):
+    window_size = 3
+    
+    for points in path():
+        pass
 def create_track(track_name:str="all",verbose:bool=True):
     if not track_name.lower()  == "all":
         t = convert_track(track_name=track_name,verbose=verbose)
