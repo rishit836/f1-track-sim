@@ -115,11 +115,14 @@ def are_collinear(points):
                 slopes.append(slope)
             else:
                 slopes.append(float('inf'))
-    mean_slope = sum(slopes)/len(slopes)
+    if len(slopes) !=0:
+        mean_slope = sum(slopes)/len(slopes)
+    else:
+        mean_slope= float('inf')
     for s in slopes:
         # having a error window to allow the slope to be almost equal
-        # considering the error between points due to pixel approximation
-        if not abs(s-mean_slope) < 1e-3:
+        #or if a track is a little bit weird
+        if not abs(s-mean_slope) < math.tan(math.radians(40)):
             # if any point has bigger error difference than 1e-3 then
             # we return False
             # else the loop keeps running and return True
@@ -131,10 +134,25 @@ def are_collinear(points):
 # creating sectors such as straight line curve with curve radius etc and not purple green sectors
 # these sectors can then be used to generate a optimal racing line which can be used by the
 # model to learn
-def create_sectors(path):
-    window_size = 3
-    for points in path():
-        pass
+def create_sectors(path,window_size:int=3):
+    sector_map = {"straight":[],
+                      "turn":[]}
+    for index,point in enumerate(path):
+        
+        if index+window_size<len(path):
+            window = path[index:index+window_size]
+        else:
+            window = path[index:]
+        if are_collinear(window):
+            for points in window:
+                if points not in sector_map['straight']:
+                    sector_map['straight'].append(points)
+        else:
+            for points in window:
+                if points not in sector_map['turn']:
+                    sector_map['turn'].append(points)
+    return sector_map
+
 
 
 def create_track(track_name:str="all",verbose:bool=True):
