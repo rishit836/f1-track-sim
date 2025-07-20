@@ -134,24 +134,40 @@ def are_collinear(points):
 # creating sectors such as straight line curve with curve radius etc and not purple green sectors
 # these sectors can then be used to generate a optimal racing line which can be used by the
 # model to learn
-def create_sectors(path,window_size:int=3):
-    sector_map = {"straight":[],
-                      "turn":[]}
+def create_sector(path,window_size:int=3):
     for index,point in enumerate(path):
-        
         if index+window_size<len(path):
-            window = path[index:index+window_size]
+            window = path[index:window_size+index]
         else:
             window = path[index:]
-        if are_collinear(window):
-            for points in window:
-                if points not in sector_map['straight']:
-                    sector_map['straight'].append(points)
-        else:
-            for points in window:
-                if points not in sector_map['turn']:
-                    sector_map['turn'].append(points)
-    return sector_map
+        if len(window) == 3:
+            window = np.array(window)
+            p1 = window[0]
+            p2 = window[1]
+            p3 = window[2]
+
+            # building vectors
+            v1 = p2-p1
+            v2 = p3-p2
+
+            dot = np.sum(v2*v1,axis=1)
+            norm1 = np.linalg.norm(v1, axis=1)
+            norm2 = np.linalg.norm(v2, axis=1)
+
+            # Avoid division by zero
+            norm_prod = norm1 * norm2
+            norm_prod[norm_prod == 0] = 1e-8
+
+            # Compute the cosine of the angle
+            cos_theta = dot / norm_prod
+
+            # Clip values to valid range to avoid NaNs due to numerical precision
+            cos_theta = np.clip(cos_theta, -1.0, 1.0)
+
+            angles = np.arccos(cos_theta)   # In radians
+            angles_deg = np.degrees(angles) # In degrees if you prefer
+            
+            
 
 
 
