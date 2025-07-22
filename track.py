@@ -8,6 +8,50 @@ import math
 # using skeletonize to convert the track into a singular path
 from skimage.morphology import skeletonize
 from scipy.interpolate import splprep,splev
+import numpy as np
+from scipy.spatial import cKDTree
+
+def trace_path(points):
+    if len(points) == 0:
+        return []
+
+    # Use a k-d tree for extremely fast neighbor lookups.
+    tree = cKDTree(points)
+    
+    # This dictionary will keep track of visited points to avoid cycles.
+    visited_indices = set()
+    
+    # Start the path with the first point in the raw list.
+    start_index = 0
+    current_index = start_index
+    
+    sorted_points = []
+
+    while len(visited_indices) < len(points):
+        # Add the current point to our sorted path and mark it as visited.
+        sorted_points.append(points[current_index])
+        visited_indices.add(current_index)
+        
+        # Find the nearest neighbors to the current point. A small search radius
+        # (e.g., k=5) is efficient.
+        distances, neighbor_indices = tree.query(points[current_index], k=5)
+        
+        # Find the first neighbor that we haven't visited yet.
+        found_next = False
+        for neighbor_index in neighbor_indices:
+            # Skip the point if it's the one we are already on, or if we've visited it.
+            if neighbor_index != current_index and neighbor_index not in visited_indices:
+                current_index = neighbor_index
+                found_next = True
+                break
+        
+        # If no unvisited neighbors are found, the path is broken or finished.
+        if not found_next:
+            break
+            
+    # Convert from NumPy's (row, col) to plot-friendly (x, y)
+    return [(int(y), int(x)) for x, y in sorted_points]
+
 
 
 def convert_svg(track_name:str)->bool:
@@ -47,9 +91,9 @@ def convert_track(track_name,verbose:bool="True"):
     mk = skeletonize(mask)
 
     # stacking two arrays into 2d array (x,y)
-    black_coords = np.column_stack(np.where(mask))
+    black_coords =np.column_stack(np.where(mask))
     black_coords_1 = np.column_stack(np.where(mk))
-    black_coords_1 = sort_nearest_neighbour(black_coords_1)
+    black_coords_1 = trace_path(black_coords_1)
 
 
 
@@ -89,6 +133,7 @@ def smooth_path(path,smoothness:int=0):
 
     # creating more points for a smoother curve
     # points are created on the spline curve
+    # adding 75 more points for smoothing
     u_new = np.linspace(u.min(),u.max(),num=len(path)*2)
 
     # evaluate the new spline curve created
