@@ -134,42 +134,63 @@ def are_collinear(points):
 # creating sectors such as straight line curve with curve radius etc and not purple green sectors
 # these sectors can then be used to generate a optimal racing line which can be used by the
 # model to learn
-def create_sector(path,window_size:int=3):
-    for index,point in enumerate(path):
-        if index+window_size<len(path):
-            window = path[index:window_size+index]
-        else:
-            window = path[index:]
-        if len(window) == 3:
-            window = np.array(window)
-            p1 = window[0]
-            p2 = window[1]
-            p3 = window[2]
+def set_used(use_map:list,start:int,end:int)->list:
+    for i,v in enumerate(use_map):
+        if start<=i and end>=i:
+            use_map[i] = True
+        if i > end:
+            break
+    return use_map
 
-            # building vectors
-            v1 = p2-p1
-            v2 = p3-p2
-
-            dot = np.sum(v2*v1,axis=1)
-            norm1 = np.linalg.norm(v1, axis=1)
-            norm2 = np.linalg.norm(v2, axis=1)
-
-            # Avoid division by zero
-            norm_prod = norm1 * norm2
-            norm_prod[norm_prod == 0] = 1e-8
-
-            # Compute the cosine of the angle
-            cos_theta = dot / norm_prod
-
-            # Clip values to valid range to avoid NaNs due to numerical precision
-            cos_theta = np.clip(cos_theta, -1.0, 1.0)
-
-            angles = np.arccos(cos_theta)   # In radians
-            angles_deg = np.degrees(angles) # In degrees if you prefer
-            
-            
-
-
+def create_sectors(path,window_size:int=11):
+    use_map = [False]*len(path)
+    sector_map = {
+        'straight':[],
+        'turn':[]
+    }
+    for i,p in enumerate(path):
+        # just to make sure the points have not already been used
+        if not use_map[i]:
+            # creating window
+            if i+window_size<len(path):
+                start = i
+                end = i+window_size+1
+                window = path[start:end]
+                use_map = set_used(use_map,start,end)
+            else:
+                start = i
+                end = len(path)-1
+                window = path[start:]
+                use_map = set_used(use_map,start,end)
+                
+            # center point of the window
+            mid_ = len(window) // 2
+            w= np.array(window)
+            # performing vector operations
+            done = False
+            pointer = 0
+            pd = []
+            while not done:
+                if pointer >= len(w):
+                    done=True
+                    break
+                v1 = w[pointer:pointer+1]
+                v2 = w[pointer+1:pointer+2]
+                v1_mag = np.linalg.norm(v1)
+                v2_mag = np.linalg.norm(v2)
+                cross_product = np.sum(np.cross(v1,v2))
+                angle = math.degrees(math.acos(cross_product/(v1_mag*v2_mag)))
+                pd.append(angle)
+                pointer+=1
+            for index,angle in enumerate(pd):
+                if 89 <= angle<90:
+                    if window[index] not in sector_map['turn']:
+                        sector_map['straight'].append(window[index])
+                else:
+                    if window[index] not in sector_map['straight']:
+                        sector_map['turn'].append(window[index])
+    return sector_map
+        
 
 def create_track(track_name:str="all",verbose:bool=True):
     if not track_name.lower()  == "all":
