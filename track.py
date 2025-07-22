@@ -7,6 +7,7 @@ import sys
 import math
 # using skeletonize to convert the track into a singular path
 from skimage.morphology import skeletonize
+from scipy.interpolate import splprep,splev
 
 
 def convert_svg(track_name:str)->bool:
@@ -51,8 +52,11 @@ def convert_track(track_name,verbose:bool="True"):
     black_coords_1 = sort_nearest_neighbour(black_coords_1)
 
 
+
     track_path = [(int(x), int(y)) for y, x in black_coords]
     track_path1 = [(int(x), int(y)) for y, x in black_coords_1]
+
+    track_path1 = smooth_path(track_path1,len(track_path1)*.05)
     if verbose:
         print(verbose)
         x_vals = [pt[0] for pt in track_path]
@@ -74,6 +78,24 @@ def convert_track(track_name,verbose:bool="True"):
         plt.show()
     
     return track_path1
+
+def smooth_path(path,smoothness:int=0):
+    # unpack the x,y into variablkes
+    x,y = np.array(path).T
+
+    # B-spline curve to smooth out the path from N-D curve
+    # per=True for closed tracks
+    tck,u = splprep([x,y],s=smoothness, per=True)
+
+    # creating more points for a smoother curve
+    # points are created on the spline curve
+    u_new = np.linspace(u.min(),u.max(),num=len(path)*2)
+
+    # evaluate the new spline curve created
+    x_new,y_new = splev(u_new,tck)
+    smoothed_path = list(zip(x_new,y_new))
+    return smoothed_path
+
 
 def sort_nearest_neighbour(path):
     # creating a path to be used
